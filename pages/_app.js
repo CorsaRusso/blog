@@ -1,7 +1,177 @@
 import '../styles/globals.css'
+import { useState } from 'react'
+import Link from 'next/link'
+import { css } from '@emotion/css'
+import { ethers } from 'ethers'
+import Web3Modal from 'web3modal'
+import WalletConnectProvider from '@walletconnect/web3-provider'
+import { AccountContext } from '../context.js'
+import { ownerAddress } from '../config'
+import 'easymde/dist/easymde.min.css'
 
-function MyApp({ Component, pageProps }) {
-  return <Component {...pageProps} />
+function App({ Component, pageProps }) {
+  const [account, setAccount] = useState(null)
+  // default set to null
+
+  async function getWeb3Modal(){
+    const web3Modal = new Web3Modal({ // new instance of Web3Modal with the following options:
+      cacheProvider: false,
+      providerOptions: {
+        walletconnect: {
+          package: WalletConnectProvider,
+          options: {
+            infuraId: "56d52dfa2cba45eea3ad4bbe467762b3"
+          },
+        },
+      },
+    })
+    return web3Modal
+  }
+
+  async function connect(){
+    try{
+      // all following code can be found on Web3Modal documentation
+      const web3Modal = await getWeb3Modal() 
+      const connection = await web3Modal.connect()  //create an instance of web3modal
+      const provider = new ethers.providers.Web3Provider(connection) 
+      const accounts = await provider.listAccounts()
+      setAccount(accounts[0])
+    } catch (err){
+      console.log('error:', err)
+    }
+  }
+
+  return (
+    <div>
+      <nav className={nav}>
+        <div classname={header}>
+          // Logo that takes user back to homepage
+          <Link href="/">
+            <a>
+              <img
+              sec='/logo.svg'
+              alt="React Logo"
+              style={{ width: '50px'}}
+              />
+            </a>
+          </Link>
+          // Title that also takes user back to homepage
+          <Link href="/">
+            <a>
+              <div className={titleContainer}>
+                <h2 className={title}>Full Stack</h2>
+                <p className={description}>WEB3</p>
+              </div>
+            </a>
+          </Link>
+          // inline rendering, if the account is null (which is default)
+          // then allow user to connect
+          // show login info otherwise
+          {
+            account ? <p className={accountInfo}>{account}</p> : 
+            (
+            <div className={buttonContainer}>
+              // connects user with connection function defined above
+              <button className={buttonStyle} onClick={connect}>Connect</button>
+              </div>
+              )
+          }
+        </div>
+        <div className={linkContainer}>
+          <Link href="/">
+            <a className={link}>
+              Home
+            </a>
+          </Link>
+          {
+            (acount == ownerAddress) && (
+              <Link href="/create-post">
+                <a className={link}>
+                  Create Post
+                </a>
+              </Link>
+            )
+          }
+        </div>
+      </nav>
+      <div className={container}>
+        <AccountContext.Provider value={account}>
+          <Component {...pageProps} connect={connect} /> 
+          // note that ... spreads out the "own" enumerable properties in props as discrete properties
+        </AccountContext.Provider>
+      </div>
+    </div>
+  )
 }
 
-export default MyApp
+const accountInfo = css`
+  width: 100%;
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  font-size: 12px;
+`
+
+const container = css`
+  padding: 40px;
+`
+
+const linkContainer = css`
+  padding: 30px 60px;
+  background-color: #fafafa;
+`
+
+const nav = css`
+  background-color: white;
+`
+
+const header = css`
+  display: flex;
+  border-bottom: 1px solid rgba(0, 0, 0, .075);
+  padding: 20px 30px;
+`
+
+const description = css`
+  margin: 0;
+  color: #999999;
+`
+
+const titleContainer = css`
+  display: flex;
+  flex-direction: column;
+  padding-left: 15px;
+`
+
+const title = css`
+  margin-left: 30px;
+  font-weight: 500;
+  margin: 0;
+`
+
+const buttonContainer = css`
+  width: 100%;
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+`
+
+const buttonStyle = css`
+  background-color: #fafafa;
+  outline: none;
+  border: none;
+  font-size: 18px;
+  padding: 16px 70px;
+  border-radius: 15px;
+  cursor: pointer;
+  box-shadow: 7px 7px rgba(0, 0, 0, .1);
+`
+
+const link = css`
+  margin: 0px 40px 0px 0px;
+  font-size: 16px;
+  font-weight: 400;
+`
+
+export default App
+
+
